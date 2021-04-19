@@ -2655,6 +2655,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
+        .id        = AV_CODEC_ID_EALAYER3,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "ealayer3",
+        .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts Layer3"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+    },
+    {
         .id        = AV_CODEC_ID_SHORTEN,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "shorten",

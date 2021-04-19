@@ -49,18 +49,38 @@ static int cdata_read_header(AVFormatContext *s)
 {
     CdataDemuxContext *cdata = s->priv_data;
     AVIOContext *pb = s->pb;
-    unsigned int sample_rate, header;
+    unsigned int sample_rate, channel_count, codec_type;
+    enum AVCodecID codec_id;
     AVStream *st;
     int64_t channel_layout = 0;
 
-    header = avio_rb16(pb);
-    switch (header) {
-        case 0x0400: cdata->channels = 1; break;
-        case 0x0404: cdata->channels = 2; break;
-        case 0x040C: cdata->channels = 4; channel_layout = AV_CH_LAYOUT_QUAD;         break;
-        case 0x0414: cdata->channels = 6; channel_layout = AV_CH_LAYOUT_5POINT1_BACK; break;
+    codec_type = avio_r8(pb);
+    switch (codec_type) {
+        case 3:
+            av_log(s, AV_LOG_INFO, "unsupported xma audio");
+            codec_id = AV_CODEC_ID_XMA2;
+            break;
+        case 4:
+            codec_id = AV_CODEC_ID_ADPCM_EA_XAS;
+            break;
+        case 5:
+        case 6:
+        case 7:
+            codec_id = AV_CODEC_ID_EALAYER3; // <-- this should be EA Layer3
+            break;
         default:
-            av_log(s, AV_LOG_INFO, "unknown header 0x%04x\n", header);
+            av_log(s, AV_LOG_INFO, "unknown codec_type 0x%02x\n", codec_type);
+            return -1;
+    }
+
+    channel_count = avio_r8(pb);
+    switch (channel_count) {
+        case 0x00: cdata->channels = 1; break;
+        case 0x04: cdata->channels = 2; break;
+        case 0x0C: cdata->channels = 4; channel_layout = AV_CH_LAYOUT_QUAD;         break;
+        case 0x14: cdata->channels = 6; channel_layout = AV_CH_LAYOUT_5POINT1_BACK; break;
+        default:
+            av_log(s, AV_LOG_INFO, "unknown channel_count 0x%02x\n", channel_count);
             return -1;
     };
 
@@ -72,7 +92,7 @@ static int cdata_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_tag = 0; /* no fourcc */
-    st->codecpar->codec_id = AV_CODEC_ID_ADPCM_EA_XAS;
+    st->codecpar->codec_id = codec_id;
     st->codecpar->channels = cdata->channels;
     st->codecpar->channel_layout = channel_layout;
     st->codecpar->sample_rate = sample_rate;

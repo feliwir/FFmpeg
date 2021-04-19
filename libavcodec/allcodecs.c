@@ -473,6 +473,8 @@ extern AVCodec ff_mp3adufloat_decoder;
 extern AVCodec ff_mp3adu_decoder;
 extern AVCodec ff_mp3on4float_decoder;
 extern AVCodec ff_mp3on4_decoder;
+extern AVCodec ff_ealayer3float_decoder;
+extern AVCodec ff_ealayer3_decoder;
 extern AVCodec ff_mpc7_decoder;
 extern AVCodec ff_mpc8_decoder;
 extern AVCodec ff_nellymoser_encoder;

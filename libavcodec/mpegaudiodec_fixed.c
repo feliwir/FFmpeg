@@ -148,3 +148,21 @@ AVCodec ff_mp3on4_decoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
+#if CONFIG_EALAYER3_DECODER
+AVCodec ff_ealayer3_decoder = {
+    .name           = "ealayer3",
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts layer 3"),
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = AV_CODEC_ID_EALAYER3,
+    .priv_data_size = sizeof(MPADecodeContext),
+    .init           = decode_init,
+    .decode         = decode_frame,
+    .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
+                      AV_CODEC_CAP_DR1,
+    .flush          = flush,
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_S16,
+                                                      AV_SAMPLE_FMT_NONE },
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+};
+#endif
