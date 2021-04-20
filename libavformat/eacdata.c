@@ -131,5 +131,5 @@ AVInputFormat ff_ea_cdata_demuxer = {
     .read_probe     = cdata_probe,
     .read_header    = cdata_read_header,
     .read_packet    = cdata_read_packet,
-    .extensions = "cdata",
+    .extensions = "cdata,snr",
 };
