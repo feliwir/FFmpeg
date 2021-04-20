@@ -57,8 +57,9 @@ static int cdata_read_header(AVFormatContext *s)
 
     codec_type = avio_r8(pb);
     switch (codec_type) {
+        case 2:
+            codec_id = AV_CODEC_ID_PCM_S16BE;
         case 3:
-            av_log(s, AV_LOG_INFO, "unsupported xma audio");
             codec_id = AV_CODEC_ID_XMA2;
             break;
         case 4:
