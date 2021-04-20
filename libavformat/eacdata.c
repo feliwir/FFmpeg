@@ -50,6 +50,7 @@ static int cdata_read_header(AVFormatContext *s)
     CdataDemuxContext *cdata = s->priv_data;
     AVIOContext *pb = s->pb;
     unsigned int sample_rate, channel_count, codec_type;
+    uint8_t ea3_variant;
     enum AVCodecID codec_id;
     AVStream *st;
     int64_t channel_layout = 0;
@@ -65,8 +66,12 @@ static int cdata_read_header(AVFormatContext *s)
             break;
         case 5:
         case 6:
+            codec_id = AV_CODEC_ID_EALAYER3; // <-- this should be EA Layer3
+            ea3_variant = 1;
+            break;
         case 7:
             codec_id = AV_CODEC_ID_EALAYER3; // <-- this should be EA Layer3
+            ea3_variant = 2;
             break;
         default:
             av_log(s, AV_LOG_INFO, "unknown codec_type 0x%02x\n", codec_type);
@@ -96,6 +101,11 @@ static int cdata_read_header(AVFormatContext *s)
     st->codecpar->channels = cdata->channels;
     st->codecpar->channel_layout = channel_layout;
     st->codecpar->sample_rate = sample_rate;
+    if(codec_id == AV_CODEC_ID_EALAYER3)
+    {
+        ff_alloc_extradata(st->codecpar, 1);
+        st->codecpar->extradata[0] = ea3_variant;
+    }
     avpriv_set_pts_info(st, 64, 1, sample_rate);
 
     cdata->audio_pts = 0;

@@ -169,7 +169,7 @@ AVCodec ff_ealayer3float_decoder = {
     .id             = AV_CODEC_ID_EALAYER3,
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
-    .decode         = decode_frame,
+    .decode         = decode_frame_ealayer3,
     .capabilities   = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
     .flush          = flush,

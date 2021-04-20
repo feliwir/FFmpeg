@@ -1894,4 +1894,113 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
 
     return buf_size;
 }
-#endif /* CONFIG_MP3ON4_DECODER || CONFIG_MP3ON4FLOAT_DECODER */
+#endif /* CONFIG_EALAYER3_DECODER || CONFIG_EALAYER3FLOAT_DECODER */
+#if CONFIG_EALAYER3_DECODER || CONFIG_EALAYER3FLOAT_DECODER
+
+#define MPEG_EAL31      1
+#define MPEG_EAL32      2
+
+#define MPEG_EAL31_HEADER_SIZE  2
+
+static int decode_header_ealayer3(AVCodecContext *avctx, MPADecodeContext *s, uint8_t header)
+{
+    static const int layer_table[4] = {/* MPEG 2.5 */ 3, /* reserved */ -1, /* MPEG 2 */ 2, /* MPEG 1 */ 1};
+    static const int mode_table[4] = {MPA_DUAL, MPA_DUAL, MPA_DUAL, MPA_JSTEREO}; /* [channel_mode] */
+
+    av_log(avctx, AV_LOG_ERROR, "EALayer3 header: %i\n", header);
+
+    uint8_t layer_index         = (header >> 6) & 3;
+    uint8_t sample_rate_index   = (header >> 4) & 3;
+    uint8_t mode_index          = (header >> 2) & 3;
+    uint8_t mode_ext            = (header >> 0) & 3;
+
+    s->layer = layer_table[layer_index];
+    if (s->layer == -1)
+    {
+        av_log(avctx, AV_LOG_ERROR, "Invalid layer_index in EALayer3 header\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if(s->sample_rate_index >= FF_ARRAY_ELEMS(avpriv_mpa_freq_tab))
+    {
+        av_log(avctx, AV_LOG_ERROR, "Invalid sample_rate_index in EALayer3 header\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    s->sample_rate_index = sample_rate_index;
+    s->sample_rate = avpriv_mpa_freq_tab[sample_rate_index] >> (s->layer - 1);
+
+    s->mode = mode_table[mode_index];
+    s->mode_ext = mode_ext;
+    return 0;
+}
+
+static int decode_frame_ealayer3(AVCodecContext * avctx, void *data, int *got_frame_ptr,
+                        AVPacket *avpkt)
+{
+    AVFrame *frame         = data;
+    const uint8_t *buf     = avpkt->data;
+    int buf_size           = avpkt->size;
+    uint8_t variant        = avctx->extradata[0];
+    MPADecodeContext *s    = avctx->priv_data;
+    uint8_t header, has_uncompressed_samples;
+    int ret;
+
+    // Uncertain if this skipping is correct here
+    int skipped = 0;
+    while(buf_size && !*buf){
+        buf++;
+        buf_size--;
+        skipped++;
+    }
+
+    if(variant == MPEG_EAL31)
+    {
+        if (buf_size < MPEG_EAL31_HEADER_SIZE)
+        {
+            av_log(avctx, AV_LOG_ERROR, "EALayer3 header missing\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        has_uncompressed_samples = AV_RB8(buf++);
+        av_log(avctx, AV_LOG_ERROR, "EALayer3 has_uncompressed_samples: %i\n", has_uncompressed_samples);
+        header = AV_RB8(buf);
+        ret = decode_header_ealayer3(avctx, s, header);
+    }
+    else if(variant == MPEG_EAL32)
+    {
+
+    }
+    else
+    {
+        av_log(avctx, AV_LOG_ERROR, "Must set EALayer3 variant before decoding\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to decode EALayer3 header\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    s->frame = data;
+
+    ret = mp_decode_frame(s, NULL, buf, buf_size);
+    if (ret >= 0) {
+        s->frame->nb_samples = avctx->frame_size;
+        *got_frame_ptr       = 1;
+        avctx->sample_rate   = s->sample_rate;
+        //FIXME maybe move the other codec info stuff from above here too
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Error while decoding MPEG audio frame.\n");
+        /* Only return an error if the bad frame makes up the whole packet or
+        * the error is related to buffer management.
+        * If there is more data in the packet, just consume the bad frame
+        * instead of returning an error, which would discard the whole
+        * packet. */
+        *got_frame_ptr = 0;
+        if (buf_size == avpkt->size || ret != AVERROR_INVALIDDATA)
+            return ret;
+    }
+    return buf_size + skipped;
+}
+#endif
