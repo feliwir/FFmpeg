@@ -66,10 +66,10 @@ static int cdata_read_header(AVFormatContext *s)
             codec_id = AV_CODEC_ID_ADPCM_EA_XAS;
             break;
         case 5:
-        case 6:
             codec_id = AV_CODEC_ID_EALAYER3; // <-- this should be EA Layer3
             ea3_variant = 1;
             break;
+        case 6:
         case 7:
             codec_id = AV_CODEC_ID_EALAYER3; // <-- this should be EA Layer3
             ea3_variant = 2;
